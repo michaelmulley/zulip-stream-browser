@@ -118,7 +118,7 @@ def generate_stream_json():
         timestamp = stream.last_message_timestamp()
         result.append(dict(
             name=stream.name,
-            counts=dict(list(d) for d in stream.daily_counts()),
+            counts=dict((int(d[0]), d[1]) for d in stream.daily_counts()),
             subjects=[list(d) for d in stream.top_subjects()],
             people=[dict(d) for d in stream.top_users()],
             last_message_timestamp=timestamp.timestamp() if timestamp else None
