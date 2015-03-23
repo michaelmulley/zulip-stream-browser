@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zulip Streams</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/5.5.1/css/foundation.min.css" />
+  <style>
+    img.avatar {
+      width: 70px;
+      height: 70px;
+      -webkit-clip-path: circle(45.0% at 50% 50%);
+      clip-path: circle(45.0% at 50% 50%);
+    }
+  </style>
+</head>
+<body>
+<div class="row">
+  <div class="column small-12" id="content">
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.1/react.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.1/JSXTransformer.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script type="text/jsx">
+
+var DATA_URL = 'https://michaelmulley.com/s/zulipdata.json';
+
+var encodeHashComponent = function (str) {
+  // zulip-specific algorithm used in generating URLs
+  return encodeURIComponent(str)
+    .replace(/\./g, '%2E')
+    .replace(/%/g,  '.');
+};
+
+var streamURL = function(stream, subject) {
+  var url = 'https://zulip.com/#narrow/stream/' + encodeHashComponent(stream);
+  if (subject) {
+    url += '/subject/' + encodeHashComponent(subject);
+  }
+  return url;
+};
+
+var StreamList = React.createClass({
+  render: function() {
+    var streams = this.props.streams;
+    return (
+      <div className="streamlist">{ streams.map(function(stream) {
+        return <Stream key={stream.name} data={stream} />
+      }) }</div>
+    )
+  }
+});
+
+var Stream = React.createClass({
+  render: function() {
+    var data = this.props.data;
+    var person = (data.people && data.people.length) ? data.people[0] : {};
+    return (
+      <div className="stream">
+        <Avatar person={person} />
+        <h1><a href={streamURL(data.name)}>{ data.name }</a></h1>
+        <Sparkline data={this.getSparklineCounts()} />
+        <ul className="subjects">{ data.subjects.map(function(subject) {
+          return <Stream.Subject key={subject[0]} name={subject[0]} stream={data.name} />
+        })}
+        </ul>
+      </div>
+    )
+  },
+
+  getSparklineCounts: function() {
+    if (Object.keys(this.props.data.counts).length === 0)
+      return [];
+    var counts = [];
+    for (var i = 0; i < 30; i++)
+      counts[i] = this.props.data.counts[i] || 0;
+    console.log(counts);
+    return counts;
+  }
+});
+
+Stream.Subject = React.createClass({
+  render: function() {
+    return (
+      <li><a href={streamURL(this.props.stream, this.props.name)}>{this.props.name}</a></li>
+    )
+  }
+});
+
+var Avatar = React.createClass({
+  render: function() {
+    var person = this.props.person;
+    if (!person.avatar_url) return false;
+    return (
+      <img className="avatar" src={person.avatar_url} alt={person.sender_name} title={person.sender_name} />
+    )
+  }
+});
+
+function createContent(data) {
+  React.render(
+    <StreamList streams={data} />,
+    document.getElementById('content')
+  );
+};
+
+function loadData() {
+  var req = new XMLHttpRequest();
+  req.onload = function() {
+    createContent(JSON.parse(this.responseText));
+  };
+  req.open("get", DATA_URL, true);
+  req.send()
+};
+
+// https://github.com/KyleAMathews/react-sparkline
+var Sparkline = React.createClass({
+
+  getDefaultProps: function() {
+    return {
+      width: 100,
+      height: 16,
+      strokeColor: 'black',
+      strokeWidth: '0.5px',
+      interpolate: 'basis',
+      circleDiameter: 1.5
+    };
+  },
+
+  componentDidMount: function() {
+    this.renderSparkline()
+  },
+
+  componentDidUpdate: function() {
+    this.renderSparkline()
+  },
+
+  render: function() {
+    return (<div className="sparkline"></div>);
+  },
+
+  renderSparkline: function() {
+    var el = this.getDOMNode();
+    while (el.firstChild)
+      el.removeChild(el.firstChild)
+
+    var data = this.props.data.slice()
+
+    if (data.length === 0)
+      return;
+
+    var x = d3.scale.linear().range([2, this.props.width - 2]);
+    var y = d3.scale.linear().range([this.props.height - 2, 2]);
+
+    var line = d3.svg.line()
+      .interpolate(this.props.interpolate)
+      .x(function (d,i) { return x(i); })
+      .y(function(d) { return y(d); })
+
+    x.domain([0, data.length]);
+    y.domain(d3.extent(data));
+
+    var lastX = x(data.length - 1);
+    var lastY = y(data[data.length - 1]);
+
+    svg = d3.select(this.getDOMNode())
+      .append('svg')
+      .attr('width', this.props.width)
+      .attr('height', this.props.height)
+      .append('g');
+
+    svg.append('path')
+      .datum(data)
+      .attr('class', 'sparkline')
+      .style('fill', 'none')
+      .style('stroke', this.props.strokeColor)
+      .style('stroke-width', this.props.strokeWidth)
+      .attr('d', line);
+
+  }
+});
+
+loadData();
+</script>
+</body>
+</html>
