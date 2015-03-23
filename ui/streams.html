@@ -11,10 +11,29 @@
       height: 70px;
       -webkit-clip-path: circle(45.0% at 50% 50%);
       clip-path: circle(45.0% at 50% 50%);
+      float: left;
+      margin-right: 25px;
+    }
+    ul.subjects {
+      list-style-type: none;
+      padding-left: 12em;
+    }
+    ul.subjects li {
+      display: inline;
+      padding-right: 1em;
+    }
+    div.sparkline {
+      float: left;
+    }
+    div.stream {
+      margin-top: 1.5em;
     }
   </style>
 </head>
 <body>
+<div class="row">
+  <div class="column small-12"><h1>The Streams of Zulip</h1></div>
+</div>
 <div class="row">
   <div class="column small-12" id="content">
   </div>
@@ -75,7 +94,6 @@ var Stream = React.createClass({
     var counts = [];
     for (var i = 0; i < 30; i++)
       counts[i] = this.props.data.counts[i] || 0;
-    console.log(counts);
     return counts;
   }
 });
