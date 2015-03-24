@@ -94,7 +94,7 @@ var Stream = React.createClass({
     var counts = [];
     for (var i = 0; i < 30; i++)
       counts[i] = this.props.data.counts[i] || 0;
-    return counts;
+    return counts.reverse();
   }
 });
 
